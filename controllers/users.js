@@ -1,77 +1,95 @@
+/* eslint-disable semi */
+/* eslint-disable consistent-return */
+/* eslint-disable object-curly-spacing */
+/* eslint-disable no-undef */
+/* eslint-disable no-param-reassign */
+/* eslint-disable arrow-parens */
 /* eslint-disable indent */
 const User = require('../models/user');
+const {
+  ERROR_INACCURATE_DATA,
+  ERROR_NOT_FOUND,
+  ERROR_INTERNAL_SERVER,
+} = require('../errors/errors');
 
 module.exports.getUsers = (req, res) => {
-  User.find({})
-  .then((users) => res.status(200).send(users))
-  .catch(() => res.status(500).send({ message: 'Internal Server Error' }));
+  User
+  .find({})
+  .then((users) => res.send({ users }))
+  .catch(() => res.status(ERROR_INTERNAL_SERVER).send({ message: 'На сервере произошла ошибка' }));
 };
 
 module.exports.getUserById = (req, res) => {
-  const { userId } = req.params;
-  User.findById(userId)
-    .orFail(new Error('NotValiId'))
-    .then((user) => res.status(200).send(user))
-    .catch((err) => {
-      if (err.message === 'NotValiId') {
-        return res.status(404).send({ message: 'Not Found' });
-      }
-      if (err.name === 'CastError') {
-        return res.status(400).send({ message: 'Error Bad Request' });
-      }
-      return res.status(500).send({ message: 'Internal Server Error' });
-    });
+  const { id } = req.params;
+
+  User
+    .findById(id)
+    .then((user) => {
+      if (user) return res.send({ user });
+
+      return res.status(ERROR_NOT_FOUND).send({ message: 'Пользователь по указанному id не найден' });
+    })
+    .catch((err) => (
+      err.name === 'CastError'
+        ? res.status(ERROR_INACCURATE_DATA).send({ message: 'Передан некорректный id' })
+        : res.status(ERROR_INTERNAL_SERVER).send({ message: 'На сервере произошла ошибка' })
+    ));
 };
 
 module.exports.createUser = (req, res) => {
-  const newUserData = req.body;
-  return User.create(newUserData)
-    .then((newUser) => res.status(201).send(newUser))
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        return res.status(400).send({
-          // eslint-disable-next-line no-shadow
-          message: `${Object.values(err.errors).map((err) => err.message).join(', ')}`,
-        });
-      }
-      return res.status(500).send({ message: 'Internal Server Error' });
-    });
+  const {
+    name, about, avatar,
+  } = req.body;
+
+  User.create({ name, about, avatar })
+    .then(user => res.send({ data: user }))
+    .catch((err) => (
+      err.name === 'ValidationError'
+        ? res.status(ERROR_INACCURATE_DATA).send({ message: 'Переданы некорректные данные при создании пользователя' })
+        : res.status(ERROR_INTERNAL_SERVER).send({ message: 'На сервере произошла ошибка' })
+    ));
 };
 
 module.exports.updateUser = (req, res) => {
-  const { name, about } = req.body;
-  User.findByIdAndUpdate(
-    req.user._id,
-    { name, about },
-    { new: true, runValidators: true },
-  )
-    .then((user) => res.status(200).send(user))
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        return res.status(400).send({
-          // eslint-disable-next-line no-shadow
-          message: `${Object.values(err.errors).map((err) => err.message).join(', ')}`,
-        });
+  const {name, about} = req.body;
+
+  User.findById(req.user._id)
+    .then((user) => {
+      user.name = name;
+      user.about = about;
+      error = user.validateSync();
+
+      if (!error) {
+        return res.send({ user });
       }
-      return res.status(500).send({ message: 'Internal Server Error' });
-    });
+
+      // eslint-disable-next-line semi
+      res.status(ERROR_INACCURATE_DATA).send({ message: 'Переданы некорректные данные при обновлении пользователя' })
+    })
+    .catch((err) => (
+      err.name === 'ValidationError'
+        ? res.status(ERROR_INACCURATE_DATA).send({ message: 'Переданы некорректные данные при обновлении пользователя' })
+        : res.status(ERROR_INTERNAL_SERVER).send({ message: err })
+    ));
 };
 
 module.exports.updateAvatar = (req, res) => {
-  const { avatar } = req.body;
-  User.findByIdAndUpdate(
-    req.user._id,
-    { avatar },
-    { new: true, runValidators: true },
-  )
-    .then((user) => res.send(user))
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        return res.status(400).send({
-          // eslint-disable-next-line no-shadow
-          message: `${Object.values(err.errors).map((err) => err.message).join(', ')}`,
-        });
+  const {avatar} = req.body;
+
+  User.findById(req.user._id)
+    .then((user) => {
+      user.avatar = avatar;
+      error = user.validateSync();
+
+      if (!error) {
+        return res.send({ user });
       }
-      return res.status(500).send({ message: 'Internal Server Error' });
-    });
+
+      res.status(ERROR_INACCURATE_DATA).send({ message: 'Переданы некорректные данные при обновлении аватара' })
+    })
+    .catch((err) => (
+      err.name === 'ValidationError'
+        ? res.status(ERROR_INACCURATE_DATA).send({ message: 'Переданы некорректные данные при обновлении аватара' })
+        : res.status(ERROR_INTERNAL_SERVER).send({ message: 'На сервере произошла ошибка' })
+    ));
 };

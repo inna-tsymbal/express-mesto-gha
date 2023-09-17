@@ -2,104 +2,103 @@
 /* eslint-disable indent */
 const Card = require('../models/card');
 
+const {
+  ERROR_INACCURATE_DATA,
+  ERROR_NOT_FOUND,
+  ERROR_INTERNAL_SERVER,
+} = require('../errors/errors');
+
 module.exports.createCard = (req, res) => {
   const { name, link } = req.body;
-  Card.create({ name, link, owner: req.user._id })
-    .then((card) => {
-      Card.findById(card._id)
-        .populate('owner')
-        .then((card) => res.status(201).send(card))
-        .catch(() => res.status(404).send({ message: 'Not Found' }));
-    })
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        return res.status(400).send({
-          // eslint-disable-next-line no-shadow
-          message: `${Object.values(err.errors).map((err) => err.message).join(', ')}`,
-        });
-      }
-      return res.status(500).send({ message: 'Internal Server Error' });
-    });
+  const { _id: userId } = req.user;
+  Card.create({ name, link, owner: userId })
+  .then((card) => res.send({ data: card }))
+    .catch((err) => (
+      err.name === 'ValidationError'
+        ? res.status(ERROR_INACCURATE_DATA).send({ message: 'Переданы некорректные данные при создании карточки' })
+        : res.status(ERROR_INTERNAL_SERVER).send({ message: 'На сервере произошла ошибка' })
+    ));
 };
 
 module.exports.getCards = (req, res) => {
   Card.find({})
-    .populate(['owner', 'likes'])
-    .then((card) => res.status(200).send(card))
-    .catch(() => res.status(500).send({ message: 'Internal Server Error' }));
+  .then((cards) => res.send({ data: cards }))
+  .catch(() => res.status(500).send({ message: 'На сервере произошла ошибка' }));
 };
 
 module.exports.deleteCardById = (req, res) => {
-  Card.findByIdAndRemove(req.params.cardId)
-  .orFail(new Error('NotValiId'))
-  .then(() => res.status(200).send({ message: 'OK' }))
-  .catch((err) => {
-    if (err.message === 'NotValiId') {
-      return res.status(404).send({ message: 'Not Found' });
-    }
-    if (err.name === 'CastError') {
-      return res.status(400).send({
-        message: 'Error Bad Request',
-      });
-    }
-    return res.status(500).send({ message: 'Internal Server Error' });
-  });
+  const { id } = req.params;
+
+  Card
+    .findByIdAndRemove(id)
+    .then((card) => {
+      if (card) return res.send({ data: card });
+
+      return res.status(ERROR_NOT_FOUND).send({ message: 'Карточка с указанным id не найдена' });
+    })
+    .catch((err) => (
+      err.name === 'CastError'
+        ? res.status(ERROR_INACCURATE_DATA).send({ message: 'Передан некорректный id' })
+        : res.status(ERROR_INTERNAL_SERVER).send({ message: 'На сервере произошла ошибка' })
+    ));
 };
 
 module.exports.likeCard = (req, res) => {
-  Card.findByIdAndUpdate(
-    req.params.cardId,
-    { $addToSet: { likes: req.user._id } },
-    { new: true },
-  )
-    .orFail(new Error('NotValiId'))
-    .populate(['owner', 'likes'])
-    .then((card) => res.status(200).send(card))
+  const { cardId } = req.params;
+  const { _id: userId } = req.user;
+
+  Card
+    .findByIdAndUpdate(
+      cardId,
+      {
+        $addToSet: {
+          likes: userId,
+        },
+      },
+      {
+        new: true,
+      },
+    )
+    .then((card) => {
+      if (card) return res.send({ data: card });
+
+      return res.status(ERROR_NOT_FOUND).send({ message: 'Карточка с указанным id не найдена' });
+    })
     .catch((err) => {
-      if (err.message === 'NotValiId') {
-        return res.status(404).send({
-          message: 'Not Found',
-        });
+      if (err.name === 'ValidationError' || err.name === 'CastError') {
+        return res.status(ERROR_INACCURATE_DATA).send({ message: 'Переданы некорректные данные для добавления лайка' });
       }
-      if (err.name === 'CastError') {
-        return res.status(400).send({
-          message: 'Error Bad Request',
-        });
-      }
-      if (err.message === 'NotValiId') {
-        return res.status(404).send({
-          message: 'Not Found',
-        });
-      }
-      return res.status(500).send({ message: 'Internal Server Error' });
+
+      return res.status(ERROR_INTERNAL_SERVER).send({ message: 'На сервере произошла ошибка' });
     });
 };
 
 module.exports.removeLike = (req, res) => {
-  Card.findByIdAndUpdate(
-    req.params.cardId,
-    { $pull: { likes: req.user._id } },
-    { new: true },
-  )
-    .orFail(new Error('NotValiId'))
-    .populate(['owner', 'likes'])
-    .then((card) => res.status(200).send(card))
+  const { cardId } = req.params;
+  const { _id: userId } = req.user;
+
+  Card
+    .findByIdAndUpdate(
+      cardId,
+      {
+        $pull: {
+          likes: userId,
+        },
+      },
+      {
+        new: true,
+      },
+    )
+    .then((card) => {
+      if (card) return res.send({ data: card });
+
+      return res.status(ERROR_NOT_FOUND).send({ message: 'Карточка с указанным id не найдена' });
+    })
     .catch((err) => {
-      if (err.message === 'NotValiId') {
-        return res.status(404).send({
-          message: 'Not Found',
-        });
+      if (err.name === 'ValidationError' || err.name === 'CastError') {
+        return res.status(ERROR_INACCURATE_DATA).send({ message: 'Переданы некорректные данные для снятия лайка' });
       }
-      if (err.name === 'CastError') {
-        return res.status(400).send({
-          message: 'Error Bad Request',
-        });
-      }
-      if (err.message === 'NotValiId') {
-        return res.status(404).send({
-          message: 'Not Found',
-        });
-      }
-      return res.status(500).send({ message: 'Internal Server Error' });
+
+      return res.status(ERROR_INTERNAL_SERVER).send({ message: 'На сервере произошла ошибка' });
     });
 };
