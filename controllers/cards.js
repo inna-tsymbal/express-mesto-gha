@@ -1,3 +1,4 @@
+/* eslint-disable no-shadow */
 /* eslint-disable indent */
 const Card = require('../models/card');
 
@@ -7,8 +8,8 @@ module.exports.createCard = (req, res) => {
     .then((card) => {
       Card.findById(card._id)
         .populate('owner')
-        .then((data) => res.status(201).send(data))
-        .catch(() => res.status(404).send({ message: 'Страница не найдена' }));
+        .then((card) => res.status(201).send(card))
+        .catch(() => res.status(404).send({ message: 'Not Found' }));
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
@@ -17,7 +18,7 @@ module.exports.createCard = (req, res) => {
           message: `${Object.values(err.errors).map((err) => err.message).join(', ')}`,
         });
       }
-      return res.status(500).send({ message: 'На сервере произошла ошибка' });
+      return res.status(500).send({ message: 'Internal Server Error' });
     });
 };
 
@@ -25,23 +26,23 @@ module.exports.getCards = (req, res) => {
   Card.find({})
     .populate(['owner', 'likes'])
     .then((card) => res.status(200).send(card))
-    .catch(() => res.status(500).send({ message: 'На сервере произошла ошибка' }));
+    .catch(() => res.status(500).send({ message: 'Internal Server Error' }));
 };
 
 module.exports.deleteCardById = (req, res) => {
   Card.findByIdAndRemove(req.params.cardId)
   .orFail(new Error('NotValiId'))
-  .then(() => res.status(200).send({ message: 'Карточка удалена' }))
+  .then(() => res.status(200).send({ message: 'OK' }))
   .catch((err) => {
     if (err.message === 'NotValiId') {
-      return res.status(404).send({ message: 'Карточка не найдена' });
+      return res.status(404).send({ message: 'Not Found' });
     }
     if (err.name === 'CastError') {
       return res.status(400).send({
-        message: 'Некорректный  id',
+        message: 'Error Bad Request',
       });
     }
-    return res.status(500).send({ message: 'На сервере произошла ошибка' });
+    return res.status(500).send({ message: 'Internal Server Error' });
   });
 };
 
@@ -57,20 +58,20 @@ module.exports.likeCard = (req, res) => {
     .catch((err) => {
       if (err.message === 'NotValiId') {
         return res.status(404).send({
-          message: 'Пользователь не найден',
+          message: 'Not Found',
         });
       }
       if (err.name === 'CastError') {
         return res.status(400).send({
-          message: 'Некорректный id пользователя',
+          message: 'Error Bad Request',
         });
       }
       if (err.message === 'NotValiId') {
         return res.status(404).send({
-          message: 'Пользователь не найден',
+          message: 'Not Found',
         });
       }
-      return res.status(500).send({ message: 'На сервере произошла ошибка' });
+      return res.status(500).send({ message: 'Internal Server Error' });
     });
 };
 
@@ -86,19 +87,19 @@ module.exports.removeLike = (req, res) => {
     .catch((err) => {
       if (err.message === 'NotValiId') {
         return res.status(404).send({
-          message: 'Пользователь не найден',
+          message: 'Not Found',
         });
       }
       if (err.name === 'CastError') {
         return res.status(400).send({
-          message: 'Некорректный id пользователя',
+          message: 'Error Bad Request',
         });
       }
       if (err.message === 'NotValiId') {
         return res.status(404).send({
-          message: 'Пользователь не найден',
+          message: 'Not Found',
         });
       }
-      return res.status(500).send({ message: 'На сервере произошла ошибка' });
+      return res.status(500).send({ message: 'Internal Server Error' });
     });
 };

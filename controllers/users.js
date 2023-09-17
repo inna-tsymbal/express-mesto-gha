@@ -4,7 +4,7 @@ const User = require('../models/user');
 module.exports.getUsers = (req, res) => {
   User.find({})
   .then((users) => res.status(200).send(users))
-  .catch(() => res.status(500).send({ message: 'На сервере произошла ошибка' }));
+  .catch(() => res.status(500).send({ message: 'Internal Server Error' }));
 };
 
 module.exports.getUserById = (req, res) => {
@@ -14,12 +14,12 @@ module.exports.getUserById = (req, res) => {
     .then((user) => res.status(200).send(user))
     .catch((err) => {
       if (err.message === 'NotValiId') {
-        return res.status(404).send({ message: 'user not found' });
+        return res.status(404).send({ message: 'Not Found' });
       }
       if (err.name === 'CastError') {
-        return res.status(400).send({ message: 'incorrect id' });
+        return res.status(400).send({ message: 'Error Bad Request' });
       }
-      return res.status(500).send({ message: 'Server Error' });
+      return res.status(500).send({ message: 'Internal Server Error' });
     });
 };
 
@@ -34,7 +34,7 @@ module.exports.createUser = (req, res) => {
           message: `${Object.values(err.errors).map((err) => err.message).join(', ')}`,
         });
       }
-      return res.status(500).send({ message: 'Server Error' });
+      return res.status(500).send({ message: 'Internal Server Error' });
     });
 };
 
@@ -53,7 +53,7 @@ module.exports.updateUser = (req, res) => {
           message: `${Object.values(err.errors).map((err) => err.message).join(', ')}`,
         });
       }
-      return res.status(500).send({ message: 'Server Error' });
+      return res.status(500).send({ message: 'Internal Server Error' });
     });
 };
 
@@ -72,6 +72,6 @@ module.exports.updateAvatar = (req, res) => {
           message: `${Object.values(err.errors).map((err) => err.message).join(', ')}`,
         });
       }
-      return res.status(500).send({ message: 'Server Error' });
+      return res.status(500).send({ message: 'Internal Server Error' });
     });
 };
