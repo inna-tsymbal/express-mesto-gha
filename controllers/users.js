@@ -35,27 +35,28 @@ module.exports.getUsers = (req, res) => {
 };
 
 module.exports.getUserById = (req, res) => {
-  User.findById(req.params.id)
+  if (req.params.userId.length === 24) {
+  User.findById(req.params.userId)
     .then((user) => {
       if (!user) {
-        return res.status(ERROR_CODE_NOT_FOUND).send({
+        res.status(ERROR_CODE_NOT_FOUND).send({
           message: "Пользователь с указанным _id не найден",
         });
-      } else {
-        return res.send({ data: user });
-      }
+        return;
+      } res.send({user});
     })
     .catch((err) => {
-      if (err instanceof mongoose.Error.CastError) {
-        return res
+      if (err.name === 'CastError') {
+        res
           .status(ERROR_CODE_BAD_REQUEST)
           .send({ message: "Пользователь по указанному _id не найден" });
       } else {
-        return res
+        res
           .status(ERROR_CODE_SERVER_ERROR)
           .send({ message: "На сервере произошла ошибка" });
       }
     });
+  }
 };
 
 module.exports.createUser = (req, res) => {
