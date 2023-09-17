@@ -46,12 +46,12 @@ module.exports.getUserById = (req, res) => {
       } res.send({user});
     })
     .catch((err) => {
-      if (err.name === 'CastError') {
-        res
+      if (err instanceof mongoose.Error.CastError) {
+        return res
           .status(ERROR_CODE_BAD_REQUEST)
           .send({ message: "Пользователь по указанному _id не найден" });
       } else {
-        res
+        return res
           .status(ERROR_CODE_SERVER_ERROR)
           .send({ message: "На сервере произошла ошибка" });
       }
