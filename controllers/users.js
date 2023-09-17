@@ -1,3 +1,11 @@
+/* eslint-disable one-var-declaration-per-line */
+/* eslint-disable one-var */
+/* eslint-disable no-multiple-empty-lines */
+/* eslint-disable comma-dangle */
+/* eslint-disable no-else-return */
+/* eslint-disable quotes */
+/* eslint-disable no-unused-vars */
+/* eslint-disable arrow-body-style */
 /* eslint-disable semi */
 /* eslint-disable consistent-return */
 /* eslint-disable object-curly-spacing */
@@ -5,91 +13,156 @@
 /* eslint-disable no-param-reassign */
 /* eslint-disable arrow-parens */
 /* eslint-disable indent */
+const mongoose = require("mongoose");
 const User = require('../models/user');
 const {
-  ERROR_INACCURATE_DATA,
-  ERROR_NOT_FOUND,
-  ERROR_INTERNAL_SERVER,
+  ERROR_CODE_SERVER_ERROR,
+  ERROR_CODE_BAD_REQUEST,
+  ERROR_CODE_NOT_FOUND,
 } = require('../errors/errors');
 
 module.exports.getUsers = (req, res) => {
-  User
-  .find({})
-  .then((users) => res.send({ users }))
-  .catch(() => res.status(ERROR_INTERNAL_SERVER).send({ message: 'На сервере произошла ошибка' }));
+  User.find({})
+  // вернём записанные в базу данные
+  .then((users) => {
+    return res.status(200).send({ data: users });
+  })
+  .catch((err) => {
+    return res
+      .status(ERROR_CODE_SERVER_ERROR)
+      .send({ message: "На сервере произошла ошибка" });
+  });
 };
 
 module.exports.getUserById = (req, res) => {
-  const { id } = req.params;
-
-  User
-    .findById(id)
+  User.findById(req.params.id)
     .then((user) => {
-      if (user) return res.send({ user });
-
-      return res.status(ERROR_NOT_FOUND).send({ message: 'Пользователь по указанному id не найден' });
+      if (!user) {
+        return res.status(ERROR_CODE_NOT_FOUND).send({
+          message: "Пользователь с указанным _id не найден",
+        });
+      } else {
+        return res.send({ data: user });
+      }
     })
-    .catch((err) => (
-      err.name === 'CastError'
-        ? res.status(ERROR_INACCURATE_DATA).send({ message: 'Передан некорректный id' })
-        : res.status(ERROR_INTERNAL_SERVER).send({ message: 'На сервере произошла ошибка' })
-    ));
+    .catch((err) => {
+      if (err instanceof mongoose.Error.CastError) {
+        return res
+          .status(ERROR_CODE_BAD_REQUEST)
+          .send({ message: "Пользователь по указанному _id не найден" });
+      } else {
+        return res
+          .status(ERROR_CODE_SERVER_ERROR)
+          .send({ message: "На сервере произошла ошибка" });
+      }
+    });
 };
 
 module.exports.createUser = (req, res) => {
-  const {
-    name, about, avatar,
-  } = req.body;
-
+  const { name, about, avatar } = req.body;
   User.create({ name, about, avatar })
-    .then(user => res.send({ data: user }))
-    .catch((err) => (
-      err.name === 'ValidationError'
-        ? res.status(ERROR_INACCURATE_DATA).send({ message: 'Переданы некорректные данные при создании пользователя' })
-        : res.status(ERROR_INTERNAL_SERVER).send({ message: 'На сервере произошла ошибка' })
-    ));
+    // вернём записанные в базу данные
+    .then((user) => {
+      return res.status(201).send({ data: user });
+    })
+    // данные не записались, вернём ошибку
+    .catch((err) => {
+      if (err instanceof mongoose.Error.ValidationError) {
+        return res.status(ERROR_CODE_BAD_REQUEST).send({
+          message: "Переданы некорректные данные при создании пользователя",
+        });
+      } else {
+        return res
+          .status(ERROR_CODE_SERVER_ERROR)
+          .send({ message: "На сервере произошла ошибка" });
+      }
+    });
 };
 
+let currentName, currentAbout;
+
 module.exports.updateUser = (req, res) => {
-  const {name, about} = req.body;
-
   User.findById(req.user._id)
-    .then((user) => {
-      user.name = name;
-      user.about = about;
-      error = user.validateSync();
+  .then((user) => {
+    currentName = user.name;
+    currentAbout = user.about;
+  })
+  .catch((err) => {
+    return res
+      .status(ERROR_CODE_SERVER_ERROR)
+      .send({ message: "На сервере произошла ошибка" });
+  });
 
-      if (!error) {
-        return res.send({ user });
-      }
-
-      // eslint-disable-next-line semi
-      res.status(ERROR_INACCURATE_DATA).send({ message: 'Переданы некорректные данные при обновлении пользователя' })
-    })
-    .catch((err) => (
-      err.name === 'ValidationError'
-        ? res.status(ERROR_INACCURATE_DATA).send({ message: 'Переданы некорректные данные при обновлении пользователя' })
-        : res.status(ERROR_INTERNAL_SERVER).send({ message: err })
-    ));
+User.findByIdAndUpdate(
+  req.user._id,
+  {
+    name: req.body.name || currentName,
+    about: req.body.about || currentAbout,
+  },
+  {
+    new: true,
+    runValidators: true,
+  }
+)
+  .then((user) => {
+    if (!user) {
+      return res.status(ERROR_CODE_NOT_FOUND).send({
+        message: "Пользователь с указанным _id не найден",
+      });
+    } else {
+      return res.status(200).send({ data: user });
+    }
+  })
+  // данные не записались, вернём ошибку
+  .catch((err) => {
+    if (err instanceof mongoose.Error.ValidationError) {
+      return res.status(ERROR_CODE_BAD_REQUEST).send({
+        message: "Переданы некорректные данные при обновлении профиля",
+      });
+    } else {
+      return res
+        .status(ERROR_CODE_SERVER_ERROR)
+        .send({ message: "На сервере произошла ошибка" });
+    }
+  });
 };
 
 module.exports.updateAvatar = (req, res) => {
-  const {avatar} = req.body;
-
-  User.findById(req.user._id)
+  User.findByIdAndUpdate(
+    req.user._id,
+    {
+      avatar: req.body.avatar,
+    },
+    {
+      new: true,
+      runValidators: true,
+    }
+  )
     .then((user) => {
-      user.avatar = avatar;
-      error = user.validateSync();
-
-      if (!error) {
-        return res.send({ user });
+      if (!user) {
+        return res.status(ERROR_CODE_NOT_FOUND).send({
+          message: "Пользователь с указанным _id не найден",
+        });
+      } else {
+        return res.status(200).send({ data: user });
       }
-
-      res.status(ERROR_INACCURATE_DATA).send({ message: 'Переданы некорректные данные при обновлении аватара' })
     })
-    .catch((err) => (
-      err.name === 'ValidationError'
-        ? res.status(ERROR_INACCURATE_DATA).send({ message: 'Переданы некорректные данные при обновлении аватара' })
-        : res.status(ERROR_INTERNAL_SERVER).send({ message: 'На сервере произошла ошибка' })
-    ));
+    // данные не записались, вернём ошибку
+    .catch((err) => {
+      if (err instanceof mongoose.Error.ValidationError) {
+        return res.status(ERROR_CODE_BAD_REQUEST).send({
+          message: "Переданы некорректные данные при обновлении аватара",
+        });
+      } else {
+        return res
+          .status(ERROR_CODE_SERVER_ERROR)
+          .send({ message: "На сервере произошла ошибка" });
+      }
+    });
+};
+
+module.exports.wrongUrl = (req, res) => {
+  return res.status(ERROR_CODE_NOT_FOUND).send({
+    message: "Неверный адрес страницы",
+  });
 };

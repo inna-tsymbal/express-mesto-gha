@@ -1,20 +1,17 @@
+/* eslint-disable quotes */
 /* eslint-disable semi */
 const mongoose = require('mongoose');
 
 const cardSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true,
-    validate: {
-      validator(name) {
-        return name.length >= 2 && name.length <= 30
-      },
-      message: 'Имя карточки должно быть длиной от 2 до 30 символов',
-    },
+    required: [true, "Поле должно быть заполнено"],
+    minlength: 2,
+    maxlength: 30,
   },
   link: {
     type: String,
-    required: true,
+    required: [true, "Поле должно быть заполнено"],
   },
   owner: {
     type: mongoose.Schema.Types.ObjectId,
@@ -30,6 +27,6 @@ const cardSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
-});
+}, { versionKey: false });
 
 module.exports = mongoose.model('card', cardSchema);
