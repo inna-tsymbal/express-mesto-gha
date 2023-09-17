@@ -35,15 +35,15 @@ module.exports.getUsers = (req, res) => {
 };
 
 module.exports.getUserById = (req, res) => {
-  if (req.params.userId.length === 24) {
   User.findById(req.params.userId)
     .then((user) => {
       if (!user) {
-        res.status(ERROR_CODE_NOT_FOUND).send({
+        return res.status(ERROR_CODE_NOT_FOUND).send({
           message: "Пользователь с указанным _id не найден",
         });
-        return;
-      } res.send({user});
+      } else {
+        return res.send({data: user});
+      }
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
@@ -56,7 +56,6 @@ module.exports.getUserById = (req, res) => {
           .send({ message: "На сервере произошла ошибка" });
       }
     });
-  }
 };
 
 module.exports.createUser = (req, res) => {
