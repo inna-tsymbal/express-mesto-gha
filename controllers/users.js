@@ -25,7 +25,7 @@ module.exports.getUsers = (req, res) => {
   User.find({})
   // вернём записанные в базу данные
   .then((users) => {
-    return res.status(200).send({ data: users });
+    return res.send({ data: users });
   })
   .catch((err) => {
     return res

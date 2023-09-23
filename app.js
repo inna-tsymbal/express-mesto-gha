@@ -1,3 +1,5 @@
+/* eslint-disable import/no-extraneous-dependencies */
+/* eslint-disable import/order */
 /* eslint-disable no-undef */
 /* eslint-disable quotes */
 /* eslint-disable indent */
@@ -11,18 +13,20 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const ERROR_CODE_SERVER_ERROR = require("./errors/errors");
+const helmet = require('helmet');
 
 const routeUsers = require('./routes/users');
 const routeCards = require('./routes/cards');
 
-const { PORT = 3000 } = process.env;
+const { PORT = 3000, DB_URL = 'mongodb://127.0.0.1:27017/mestodb' } = process.env;
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(helmet());
 
 // подключаемся к серверу mongo
-mongoose.connect('mongodb://localhost:27017/mestodb', {
+mongoose.connect(DB_URL, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
