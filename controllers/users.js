@@ -82,18 +82,7 @@ module.exports.createUser = (req, res) => {
 let currentName, currentAbout;
 
 module.exports.updateUser = (req, res) => {
-  User.findById(req.user._id)
-  .then((user) => {
-    currentName = user.name;
-    currentAbout = user.about;
-  })
-  .catch((err) => {
-    return res
-      .status(ERROR_CODE_SERVER_ERROR)
-      .send({ message: "На сервере произошла ошибка" });
-  });
-
-User.findByIdAndUpdate(
+  User.findByIdAndUpdate(
   req.user._id,
   {
     name: req.body.name || currentName,
@@ -141,7 +130,7 @@ module.exports.updateAvatar = (req, res) => {
     .then((user) => {
       if (!user) {
         return res.status(ERROR_CODE_NOT_FOUND).send({
-          message: "Пользователь с указанным _id не найден",
+          message: "Пользователь с указанным ID не найден",
         });
       } else {
         return res.status(200).send({ data: user });
