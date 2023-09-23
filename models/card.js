@@ -1,13 +1,11 @@
-/* eslint-disable quotes */
-/* eslint-disable semi */
+/* eslint-disable import/no-extraneous-dependencies */
 const mongoose = require('mongoose');
-// eslint-disable-next-line import/no-extraneous-dependencies
 const validator = require('validator');
 
 const cardSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: [true, "Поле должно быть заполнено"],
+    required: [true, 'Поле должно быть заполнено'],
     minlength: 2,
     maxlength: 30,
   },
@@ -17,7 +15,7 @@ const cardSchema = new mongoose.Schema({
       validator: (v) => validator.isURL(v),
       message: 'Некорректный URL',
     },
-    required: [true, "Поле должно быть заполнено"],
+    required: [true, 'Поле должно быть заполнено'],
   },
   owner: {
     type: mongoose.Schema.Types.ObjectId,

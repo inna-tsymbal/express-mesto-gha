@@ -1,19 +1,5 @@
-/* eslint-disable one-var-declaration-per-line */
-/* eslint-disable one-var */
-/* eslint-disable no-multiple-empty-lines */
-/* eslint-disable comma-dangle */
-/* eslint-disable no-else-return */
-/* eslint-disable quotes */
 /* eslint-disable no-unused-vars */
-/* eslint-disable arrow-body-style */
-/* eslint-disable semi */
-/* eslint-disable consistent-return */
-/* eslint-disable object-curly-spacing */
-/* eslint-disable no-undef */
-/* eslint-disable no-param-reassign */
-/* eslint-disable arrow-parens */
-/* eslint-disable indent */
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 const User = require('../models/user');
 const {
   ERROR_CODE_SERVER_ERROR,
@@ -23,15 +9,10 @@ const {
 
 module.exports.getUsers = (req, res) => {
   User.find({})
-  // вернём записанные в базу данные
-  .then((users) => {
-    return res.send({ data: users });
-  })
-  .catch((err) => {
-    return res
+    .then((users) => res.send({ data: users }))
+    .catch((err) => res
       .status(ERROR_CODE_SERVER_ERROR)
-      .send({ message: "На сервере произошла ошибка" });
-  });
+      .send({ message: 'На сервере произошла ошибка' }));
 };
 
 module.exports.getUserById = (req, res) => {
@@ -39,81 +20,72 @@ module.exports.getUserById = (req, res) => {
     .then((user) => {
       if (!user) {
         return res.status(ERROR_CODE_NOT_FOUND).send({
-          message: "Пользователь с указанным _id не найден",
+          message: 'Пользователь с указанным _id не найден',
         });
-      } else {
-        return res.send({data: user});
       }
+      return res.send({ data: user });
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
         return res
           .status(ERROR_CODE_BAD_REQUEST)
-          .send({ message: "Пользователь по указанному _id не найден" });
-      } else {
-        return res
-          .status(ERROR_CODE_SERVER_ERROR)
-          .send({ message: "На сервере произошла ошибка" });
+          .send({ message: 'Пользователь по указанному _id не найден' });
       }
+      return res
+        .status(ERROR_CODE_SERVER_ERROR)
+        .send({ message: 'На сервере произошла ошибка' });
     });
 };
 
 module.exports.createUser = (req, res) => {
   const { name, about, avatar } = req.body;
   User.create({ name, about, avatar })
-    // вернём записанные в базу данные
-    .then((user) => {
-      return res.status(201).send({ data: user });
-    })
-    // данные не записались, вернём ошибку
+    .then((user) => res.status(201).send({ data: user }))
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
         return res.status(ERROR_CODE_BAD_REQUEST).send({
-          message: "Переданы некорректные данные при создании пользователя",
+          message: 'Переданы некорректные данные при создании пользователя',
         });
-      } else {
-        return res
-          .status(ERROR_CODE_SERVER_ERROR)
-          .send({ message: "На сервере произошла ошибка" });
       }
+      return res
+        .status(ERROR_CODE_SERVER_ERROR)
+        .send({ message: 'На сервере произошла ошибка' });
     });
 };
 
-let currentName, currentAbout;
+let currentName; let
+  currentAbout;
 
 module.exports.updateUser = (req, res) => {
   User.findByIdAndUpdate(
-  req.user._id,
-  {
-    name: req.body.name || currentName,
-    about: req.body.about || currentAbout,
-  },
-  {
-    new: true,
-    runValidators: true,
-  }
-)
-  .then((user) => {
-    if (!user) {
-      return res.status(ERROR_CODE_NOT_FOUND).send({
-        message: "Пользователь с указанным _id не найден",
-      });
-    } else {
+    req.user._id,
+    {
+      name: req.body.name || currentName,
+      about: req.body.about || currentAbout,
+    },
+    {
+      new: true,
+      runValidators: true,
+    },
+  )
+    .then((user) => {
+      if (!user) {
+        return res.status(ERROR_CODE_NOT_FOUND).send({
+          message: 'Пользователь с указанным _id не найден',
+        });
+      }
       return res.status(200).send({ data: user });
-    }
-  })
-  // данные не записались, вернём ошибку
-  .catch((err) => {
-    if (err instanceof mongoose.Error.ValidationError) {
-      return res.status(ERROR_CODE_BAD_REQUEST).send({
-        message: "Переданы некорректные данные при обновлении профиля",
-      });
-    } else {
+    })
+    .catch((err) => {
+      if (err instanceof mongoose.Error.ValidationError) {
+        return res.status(ERROR_CODE_BAD_REQUEST).send({
+          message: 'Переданы некорректные данные при обновлении профиля',
+        });
+      }
       return res
         .status(ERROR_CODE_SERVER_ERROR)
-        .send({ message: "На сервере произошла ошибка" });
-    }
-  });
+        .send({ message: 'На сервере произошла ошибка' });
+    });
 };
 
 module.exports.updateAvatar = (req, res) => {
@@ -125,33 +97,28 @@ module.exports.updateAvatar = (req, res) => {
     {
       new: true,
       runValidators: true,
-    }
+    },
   )
     .then((user) => {
       if (!user) {
         return res.status(ERROR_CODE_NOT_FOUND).send({
-          message: "Пользователь с указанным ID не найден",
+          message: 'Пользователь с указанным ID не найден',
         });
-      } else {
-        return res.status(200).send({ data: user });
       }
+      return res.status(200).send({ data: user });
     })
-    // данные не записались, вернём ошибку
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
         return res.status(ERROR_CODE_BAD_REQUEST).send({
-          message: "Переданы некорректные данные при обновлении аватара",
+          message: 'Переданы некорректные данные при обновлении аватара',
         });
-      } else {
-        return res
-          .status(ERROR_CODE_SERVER_ERROR)
-          .send({ message: "На сервере произошла ошибка" });
       }
+      return res
+        .status(ERROR_CODE_SERVER_ERROR)
+        .send({ message: 'На сервере произошла ошибка' });
     });
 };
 
-module.exports.wrongUrl = (req, res) => {
-  return res.status(ERROR_CODE_NOT_FOUND).send({
-    message: "Неверный адрес страницы",
-  });
-};
+module.exports.wrongUrl = (req, res) => res.status(ERROR_CODE_NOT_FOUND).send({
+  message: 'Неверный адрес страницы',
+});
