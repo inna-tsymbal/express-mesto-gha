@@ -3,18 +3,21 @@
 /* eslint-disable no-undef */
 const express = require('express');
 const mongoose = require('mongoose');
-const helmet = require('helmet');
+const { celebrate, Joi, errors } = require('celebrate');
+const bodyParser = require('body-parser');
+const { createUser, login } = require('./controllers/users');
+const auth = require('./middlewares/auth');
+
 const ERROR_CODE_SERVER_ERROR = require('./errors/errors');
 
 const routeUsers = require('./routes/users');
 const routeCards = require('./routes/cards');
 
 const { PORT = 3000, DB_URL = 'mongodb://127.0.0.1:27017/mestodb' } = process.env;
-
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(helmet());
+
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 mongoose.connect(DB_URL, {
   useNewUrlParser: true,
@@ -30,16 +33,32 @@ mongoose.connect(DB_URL, {
       .send({ message: 'На сервере произошла ошибка' });
   });
 
-app.use((req, res, next) => {
-  req.user = {
-    _id: '5d8b8592978f8bd833ca8133',
-  };
-  next();
-});
+app.post('/signup', celebrate({
+  body: Joi.object().keys({
+    name: Joi.string().min(2).max(30),
+    about: Joi.string().min(2).max(30),
+    avatar: Joi.string().regex(
+      /^https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_+.~#?&/=]*)$/,
+    ),
+    email: Joi.string().required().email(),
+    password: Joi.string().required().min(8),
+  }),
+}), createUser);
+
+app.post('/signin', celebrate({
+  body: Joi.object().keys({
+    email: Joi.string().required().email(),
+    password: Joi.string().required().min(8),
+  }),
+}), login);
+
+app.use(auth);
 
 app.use(routeUsers);
 
 app.use(routeCards);
+
+app.use(errors());
 
 app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);

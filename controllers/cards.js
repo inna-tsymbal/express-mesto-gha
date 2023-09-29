@@ -8,11 +8,19 @@ const {
   ERROR_CODE_NOT_FOUND,
 } = require('../errors/errors');
 
+module.exports.getCards = (req, res) => {
+  Card.find({})
+    .then((cards) => res.status(200).send(cards))
+    .catch((err) => res
+      .status(ERROR_CODE_SERVER_ERROR)
+      .send({ message: 'На сервере произошла ошибка' }));
+};
+
 module.exports.createCard = (req, res) => {
   const { name, link } = req.body;
   const owner = req.user._id;
   Card.create({ name, link, owner })
-    .then((card) => res.status(201).send({ data: card }))
+    .then((card) => res.status(201).send(card))
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
         return res.status(ERROR_CODE_BAD_REQUEST).send({
@@ -25,23 +33,15 @@ module.exports.createCard = (req, res) => {
     });
 };
 
-module.exports.getCards = (req, res) => {
-  Card.find({})
-    .then((cards) => res.status(200).send({ data: cards }))
-    .catch((err) => res
-      .status(ERROR_CODE_SERVER_ERROR)
-      .send({ message: 'На сервере произошла ошибка' }));
-};
-
 module.exports.deleteCardById = (req, res) => {
   Card.findByIdAndRemove(req.params.cardId, { useFindAndModify: false })
     .then((card) => {
       if (!card) {
         return res
           .status(ERROR_CODE_NOT_FOUND)
-          .send({ message: 'Карточка с указанным _id не найдена.' });
+          .send({ message: 'Карточка с указанным id не найдена.' });
       }
-      return res.send({ data: card });
+      return res.send(card);
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
@@ -65,14 +65,14 @@ module.exports.likeCard = (req, res) => {
       if (!card) {
         return res
           .status(ERROR_CODE_NOT_FOUND)
-          .send({ message: 'Карточка с указанным _id не найдена.' });
+          .send({ message: 'Карточка с указанным id не найдена.' });
       }
-      return res.status(201).send({ data: card });
+      return res.status(201).send(card);
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
         return res.status(ERROR_CODE_BAD_REQUEST).send({
-          message: 'Передан несуществующий _id карточки',
+          message: 'Передан несуществующий id карточки',
         });
       }
       return res
@@ -91,14 +91,14 @@ module.exports.removeLike = (req, res) => {
       if (!card) {
         return res
           .status(ERROR_CODE_NOT_FOUND)
-          .send({ message: 'Карточка с указанным _id не найдена.' });
+          .send({ message: 'Карточка с указанным id не найдена.' });
       }
       return res.status(200).send({ data: card });
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
         return res.status(ERROR_CODE_BAD_REQUEST).send({
-          message: 'Передан несуществующий _id карточки',
+          message: 'Передан несуществующий id карточки',
         });
       }
       return res

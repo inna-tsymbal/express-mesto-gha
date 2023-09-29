@@ -1,15 +1,22 @@
+/* eslint-disable import/no-extraneous-dependencies */
+/* eslint-disable object-curly-newline */
 /* eslint-disable no-unused-vars */
 const mongoose = require('mongoose');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
 const User = require('../models/user');
 const {
   ERROR_CODE_SERVER_ERROR,
   ERROR_CODE_BAD_REQUEST,
   ERROR_CODE_NOT_FOUND,
+  ERROR_CODE_UNAUTHORIZED_ERROR,
 } = require('../errors/errors');
+
+const { KEY = 'uXDm8ygPYPzEJ3qbycmZ' } = process.env;
 
 module.exports.getUsers = (req, res) => {
   User.find({})
-    .then((users) => res.send({ data: users }))
+    .then((users) => res.send(users))
     .catch((err) => res
       .status(ERROR_CODE_SERVER_ERROR)
       .send({ message: 'На сервере произошла ошибка' }));
@@ -20,16 +27,16 @@ module.exports.getUserById = (req, res) => {
     .then((user) => {
       if (!user) {
         return res.status(ERROR_CODE_NOT_FOUND).send({
-          message: 'Пользователь с указанным _id не найден',
+          message: 'Пользователь с указанным id не найден',
         });
       }
-      return res.send({ data: user });
+      return res.send(user);
     })
     .catch((err) => {
       if (err instanceof mongoose.Error.CastError) {
         return res
           .status(ERROR_CODE_BAD_REQUEST)
-          .send({ message: 'Пользователь по указанному _id не найден' });
+          .send({ message: 'Пользователь по указанному id не найден' });
       }
       return res
         .status(ERROR_CODE_SERVER_ERROR)
@@ -38,8 +45,9 @@ module.exports.getUserById = (req, res) => {
 };
 
 module.exports.createUser = (req, res) => {
-  const { name, about, avatar } = req.body;
-  User.create({ name, about, avatar })
+  const { name, about, avatar, email, password } = req.body;
+  bcrypt.hash(password, 10)
+    .then((hash) => User.create({ name, about, avatar, email, password: hash }))
     .then((user) => res.status(201).send({ data: user }))
     .catch((err) => {
       if (err instanceof mongoose.Error.ValidationError) {
@@ -53,8 +61,8 @@ module.exports.createUser = (req, res) => {
     });
 };
 
-let currentName; let
-  currentAbout;
+let currentName;
+let currentAbout;
 
 module.exports.updateUser = (req, res) => {
   User.findByIdAndUpdate(
@@ -71,7 +79,7 @@ module.exports.updateUser = (req, res) => {
     .then((user) => {
       if (!user) {
         return res.status(ERROR_CODE_NOT_FOUND).send({
-          message: 'Пользователь с указанным _id не найден',
+          message: 'Пользователь с указанным id не найден',
         });
       }
       return res.status(200).send({ data: user });
@@ -102,7 +110,7 @@ module.exports.updateAvatar = (req, res) => {
     .then((user) => {
       if (!user) {
         return res.status(ERROR_CODE_NOT_FOUND).send({
-          message: 'Пользователь с указанным ID не найден',
+          message: 'Пользователь с указанным id не найден',
         });
       }
       return res.status(200).send({ data: user });
@@ -119,6 +127,37 @@ module.exports.updateAvatar = (req, res) => {
     });
 };
 
-module.exports.wrongUrl = (req, res) => res.status(ERROR_CODE_NOT_FOUND).send({
-  message: 'Неверный адрес страницы',
-});
+module.exports.login = (req, res, next) => {
+  const { email, password } = req.body;
+  User.findOne({ email }).select('+password')
+    .then((user) => {
+      if (!user) {
+        return res.status(ERROR_CODE_UNAUTHORIZED_ERROR).send({
+          message: 'Неправильные почта или пароль',
+        });
+      }
+      return bcrypt.compare(password, user.password)
+        .then((matched) => {
+          if (!matched) {
+            return res.status(ERROR_CODE_UNAUTHORIZED_ERROR).send({
+              message: 'Неправильные почта или пароль',
+            });
+          }
+          return res.status(200).send({ data: user });
+        });
+    })
+    .then((user) => {
+      const token = jwt.sign(
+        { _id: user._id },
+        KEY,
+        { expiresIn: '7d' },
+      );
+      res
+        .cookie('jwt', token, {
+          maxAge: 3600000 * 24 * 7,
+          httpOnly: true,
+        })
+        .send({ token });
+    })
+    .catch(next);
+};
