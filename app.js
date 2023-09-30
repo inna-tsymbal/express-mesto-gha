@@ -1,6 +1,7 @@
+/* eslint-disable import/no-extraneous-dependencies */
+/* eslint-disable no-console */
 const express = require('express');
 const mongoose = require('mongoose');
-// eslint-disable-next-line import/no-extraneous-dependencies
 const rateLimit = require('express-rate-limit');
 const helmet = require('helmet');
 const { errors } = require('celebrate');
@@ -8,11 +9,12 @@ const auth = require('./middlewares/auth');
 const { validateLogin, validateCreateUser } = require('./middlewares/validation');
 const { login, createUser } = require('./controllers/users');
 const NotFoundError = require('./errors/NotFoundError');
-const { MONGODB_URL, PORT } = require('./utils/constants');
+
+const { PORT = 3000, DB_URL = 'mongodb://127.0.0.1:27017/mestodb' } = process.env;
 
 const app = express();
 
-mongoose.connect(MONGODB_URL);
+mongoose.connect(DB_URL);
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -40,4 +42,6 @@ app.use((err, req, res, next) => {
   next();
 });
 
-app.listen(PORT);
+app.listen(PORT, () => {
+  console.log(`App listening on port ${PORT}`);
+});

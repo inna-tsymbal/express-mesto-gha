@@ -13,12 +13,11 @@ module.exports.getCards = (req, res, next) => {
 
 module.exports.createCard = (req, res, next) => {
   const { name, link } = req.body;
-
   Card.create({ name, link, owner: req.user._id })
     .then((card) => res.send(card))
     .catch((err) => {
       if (err instanceof Error.ValidationError) {
-        next(new BadRequestError('Переданы некорректные данные при создании карточки.'));
+        next(new BadRequestError('Переданы некорректные данные'));
       }
       next(err);
     });
@@ -26,11 +25,11 @@ module.exports.createCard = (req, res, next) => {
 
 module.exports.likeCard = (req, res, next) => {
   Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: true })
-    .orFail(new NotFoundError('Передан несуществующий `_id` карточки.'))
+    .orFail(new NotFoundError('Передан несуществующий id'))
     .then((card) => res.send(card))
     .catch((err) => {
       if (err instanceof Error.CastError) {
-        next(new BadRequestError('Переданы некорректные данные для постановки лайка.'));
+        next(new BadRequestError('Переданы некорректные данные'));
       }
       next(err);
     });
@@ -38,17 +37,17 @@ module.exports.likeCard = (req, res, next) => {
 
 module.exports.deleteCard = (req, res, next) => {
   Card.findById(req.params.cardId)
-    .orFail(new NotFoundError('Карточка с указанным `_id` не найдена.'))
+    .orFail(new NotFoundError('Карточка с указанным id не найдена'))
     .then((card) => {
       if (!card.owner.equals(req.user._id)) {
-        next(new ForbiddenError('Отсутствуют права для удаления карточки с указанным `_id`.'));
+        next(new ForbiddenError('Удалить карточку с указанным _id нельзя'));
       }
       Card.deleteOne(card)
         .then(res.send(card));
     })
     .catch((err) => {
       if (err instanceof Error.CastError) {
-        next(new BadRequestError('Передан несуществующий `_id` карточки.'));
+        next(new BadRequestError('Передан несуществующий id'));
       }
       next(err);
     });
@@ -56,11 +55,11 @@ module.exports.deleteCard = (req, res, next) => {
 
 module.exports.dislikeCard = (req, res, next) => {
   Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } }, { new: true })
-    .orFail(new NotFoundError('Передан несуществующий `_id` карточки.'))
+    .orFail(new NotFoundError('Передан несуществующий id'))
     .then((card) => res.send(card))
     .catch((err) => {
       if (err instanceof Error.CastError) {
-        next(new BadRequestError('Переданы некорректные данные для снятия лайка.'));
+        next(new BadRequestError('Переданы некорректные данные'));
       }
       next(err);
     });

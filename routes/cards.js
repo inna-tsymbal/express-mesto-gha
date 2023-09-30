@@ -3,10 +3,11 @@ const router = require('express').Router();
 const {
   getCards,
   createCard,
-  likeCard,
   deleteCard,
+  likeCard,
   dislikeCard,
 } = require('../controllers/cards');
+
 const {
   validateCreateCard,
   validateUpdateCard,
