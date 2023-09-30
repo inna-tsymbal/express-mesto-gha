@@ -1,36 +1,22 @@
-/* eslint-disable import/no-extraneous-dependencies */
 const router = require('express').Router();
-const { celebrate, Joi } = require('celebrate');
 
 const {
-  getUsers, getUser, getUserById, updateUser, updateAvatar,
+  getUsers,
+  getCurrentUser,
+  getUserById,
+  updateUserInfo,
+  updateUserAvatar,
 } = require('../controllers/users');
+const {
+  validateGetUserById,
+  validateUpdateUserInfo,
+  validateUpdateUserAvatar,
+} = require('../middlewares/validation');
 
 router.get('/', getUsers);
-router.post('/me', getUser);
-
-router.get('/id', celebrate({
-  params: Joi.object().keys({
-    id: Joi.string().length(24).hex().required(),
-  }),
-}), getUserById);
-
-router.patch('/me', celebrate({
-  body: Joi.object().keys({
-    name: Joi.string().min(2).max(30),
-    about: Joi.string().min(2).max(30),
-  }),
-}), updateUser);
-
-router.patch('/me/avatar', celebrate({
-  body: Joi.object().keys({
-    avatar: Joi.string().uri({
-      scheme: [
-        'http',
-        'https',
-      ],
-    }).required(),
-  }),
-}), updateAvatar);
+router.get('/me', getCurrentUser);
+router.get('/:userId', validateGetUserById, getUserById);
+router.patch('/me', validateUpdateUserInfo, updateUserInfo);
+router.patch('/me/avatar', validateUpdateUserAvatar, updateUserAvatar);
 
 module.exports = router;

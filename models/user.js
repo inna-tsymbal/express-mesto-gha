@@ -1,5 +1,9 @@
 /* eslint-disable import/no-extraneous-dependencies */
 const mongoose = require('mongoose');
+const validator = require('validator');
+// eslint-disable-next-line import/no-unresolved
+const bcrypt = require('bcryptjs');
+const UnauthorizedError = require('../errors/UnauthorizedError');
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -19,9 +23,7 @@ const userSchema = new mongoose.Schema({
   avatar: {
     type: String,
     validate: {
-      validator(v) {
-        return /^(https?:\/{2})([\w-]+\.)+\w(\/?[\w\-.~:/?#[\]@!$&'()*+,;=]*)#?/.test(v);
-      },
+      validator: (v) => validator.isURL(v),
       message: 'Некорректный URL',
     },
     required: true,
@@ -31,6 +33,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
     unique: true,
+    validate: {
+      validator: (v) => validator.isEmail(v),
+      message: 'Некорректный URL',
+    },
   },
   password: {
     type: String,
@@ -38,5 +44,21 @@ const userSchema = new mongoose.Schema({
     select: false,
   },
 });
+
+userSchema.statics.findUserByCredentials = function findByCredits(email, password, next) {
+  return this.findOne({ email }).select('+password')
+    .then((user) => {
+      if (!user) {
+        next(new UnauthorizedError('Неправильные почта или пароль.'));
+      }
+      return bcrypt.compare(password, user.password)
+        .then((matched) => {
+          if (!matched) {
+            next(new UnauthorizedError('Неправильные почта или пароль.'));
+          }
+          return user;
+        });
+    });
+};
 
 module.exports = mongoose.model('user', userSchema);

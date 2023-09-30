@@ -1,41 +1,21 @@
-/* eslint-disable import/no-extraneous-dependencies */
 const router = require('express').Router();
-const { celebrate, Joi } = require('celebrate');
 
 const {
-  getCards, createCard, deleteCardById, likeCard, dislikeCard,
+  getCards,
+  createCard,
+  likeCard,
+  deleteCard,
+  dislikeCard,
 } = require('../controllers/cards');
+const {
+  validateCreateCard,
+  validateUpdateCard,
+} = require('../middlewares/validation');
 
 router.get('/', getCards);
-
-router.post('/', celebrate({
-  body: Joi.object().keys({
-    name: Joi.string().min(2).max(30).required(),
-    link: Joi.string().uri({
-      scheme: [
-        'http',
-        'https',
-      ],
-    }).required(),
-  }),
-}), createCard);
-
-router.delete('/:id', celebrate({
-  params: Joi.object().keys({
-    id: Joi.string().length(24).hex().required(),
-  }),
-}), deleteCardById);
-
-router.put('/:id/likes', celebrate({
-  params: Joi.object().keys({
-    id: Joi.string().length(24).hex().required(),
-  }),
-}), likeCard);
-
-router.delete('/id/likes', celebrate({
-  params: Joi.object().keys({
-    id: Joi.string().length(24).hex().required(),
-  }),
-}), dislikeCard);
+router.post('/', validateCreateCard, createCard);
+router.put('/:cardId/likes', validateUpdateCard, likeCard);
+router.delete('/:cardId', validateUpdateCard, deleteCard);
+router.delete('/:cardId/likes', validateUpdateCard, dislikeCard);
 
 module.exports = router;
