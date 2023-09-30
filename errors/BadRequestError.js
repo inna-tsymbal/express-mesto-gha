@@ -1,8 +1,9 @@
-/* eslint-disable linebreak-style */
+const http2 = require('http2');
+
 class BadRequestError extends Error {
   constructor(message) {
     super(message);
-    this.statusCode = 400;
+    this.statusCode = http2.constants.HTTP_STATUS_BAD_REQUEST;
   }
 }
 
