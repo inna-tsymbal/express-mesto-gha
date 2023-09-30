@@ -1,6 +1,7 @@
 /* eslint-disable import/no-extraneous-dependencies */
 const router = require('express').Router();
 const { celebrate, Joi } = require('celebrate');
+const { regexp } = require('../utils/regexp');
 
 const {
   getUsers, getUser, getUserById, updateUser, updateAvatar,
@@ -24,9 +25,7 @@ router.patch('/users/me', celebrate({
 
 router.patch('/users/me/avatar', celebrate({
   body: Joi.object().keys({
-    avatar: Joi.string().regex(
-      /(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]+\.[^\s]{2,}|www\.[a-zA-Z0-9]+\.[^\s]{2,})/,
-    ),
+    avatar: Joi.string().pattern(regexp),
   }),
 }), updateAvatar);
 
