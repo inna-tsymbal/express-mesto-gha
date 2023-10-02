@@ -1,4 +1,3 @@
-const { Error } = require('mongoose');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
@@ -8,12 +7,12 @@ const ConflictError = require('../errors/ConflictError');
 
 module.exports.login = (req, res, next) => {
   const { email, password } = req.body;
-  return User.findUserByCredentials(email, password, next)
+  return User.findUserByCredentials(email, password)
     .then((user) => {
       const token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
       res.send({ token });
     })
-    .catch(next);
+    .catch((err) => next(err));
 };
 
 module.exports.getUsers = (req, res, next) => {
@@ -24,10 +23,12 @@ module.exports.getUsers = (req, res, next) => {
 
 module.exports.getUser = (req, res, next) => {
   User.findById(req.user._id)
-    .orFail(new NotFoundError('Пользователь по указанному id не найден'))
+    .orFail(() => {
+      throw new NotFoundError('Пользователь по указанному id не найден');
+    })
     .then((user) => res.send(user))
     .catch((err) => {
-      if (err instanceof Error.CastError) {
+      if (err.name === 'CastError') {
         return next(new BadRequestError('Переданы некорректные данные'));
       }
       return next(err);
@@ -36,10 +37,12 @@ module.exports.getUser = (req, res, next) => {
 
 module.exports.getUserById = (req, res, next) => {
   User.findById(req.params.userId)
-    .orFail(new NotFoundError('Пользователь по указанному id не найден'))
+    .orFail(() => {
+      throw new NotFoundError('Пользователь по указанному id не найден');
+    })
     .then((user) => res.send(user))
     .catch((err) => {
-      if (err instanceof Error.CastError) {
+      if (err.name === 'CastError') {
         return next(new BadRequestError('Переданы некорректные данные'));
       }
       return next(err);
@@ -62,7 +65,7 @@ module.exports.createUser = (req, res, next) => {
       _id: user._id,
     }))
     .catch((err) => {
-      if (err instanceof Error.ValidationError) {
+      if (err.name === 'ValidationError') {
         return next(new BadRequestError('Переданы некорректные данные'));
       }
       if (err.code === 11000) {
@@ -74,11 +77,13 @@ module.exports.createUser = (req, res, next) => {
 
 module.exports.updateUser = (req, res, next) => {
   const { name, about } = req.body;
-  User.findByIdAndUpdate(req.user._id, { name, about }, { new: true })
-    .orFail(new NotFoundError('Пользователь по указанному id не найден'))
+  User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
+    .orFail(() => {
+      throw new NotFoundError('Пользователь по указанному id не найден');
+    })
     .then((user) => res.send(user))
     .catch((err) => {
-      if (err instanceof Error.ValidationError) {
+      if (err.name === 'ValidationError') {
         return next(new BadRequestError('Переданы некорректные данные'));
       }
       return next(err);
@@ -87,11 +92,13 @@ module.exports.updateUser = (req, res, next) => {
 
 module.exports.updateAvatar = (req, res, next) => {
   const { avatar } = req.body;
-  User.findByIdAndUpdate(req.user._id, { avatar }, { new: true })
-    .orFail(new NotFoundError('Пользователь по указанному id не найден'))
+  User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
+    .orFail(() => {
+      throw new NotFoundError('Пользователь по указанному id не найден');
+    })
     .then((user) => res.send(user))
     .catch((err) => {
-      if (err instanceof Error.ValidationError) {
+      if (err.name === 'ValidationError') {
         return next(new BadRequestError('Переданы некорректные данные.'));
       }
       return next(err);

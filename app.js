@@ -7,7 +7,6 @@ const helmet = require('helmet');
 const { errors } = require('celebrate');
 const auth = require('./middlewares/auth');
 const { validateLogin, validateCreateUser } = require('./middlewares/validation');
-const errorHandler = require('./middlewares/error-handler');
 const { login, createUser } = require('./controllers/users');
 const NotFoundError = require('./errors/NotFoundError');
 
@@ -37,7 +36,11 @@ app.use('/cards', require('./routes/cards'));
 app.use('*', (req, res, next) => next(new NotFoundError('Такая страница не существует.')));
 
 app.use(errors());
-app.use(errorHandler());
+app.use((err, req, res, next) => {
+  const { statusCode = 500, message = 'На сервере произошла ошибка.' } = err;
+  res.status(statusCode).send({ message });
+  next();
+});
 
 app.listen(PORT, () => {
   console.log(`App listening on port ${PORT}`);

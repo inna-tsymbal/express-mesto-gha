@@ -1,4 +1,3 @@
-const { Error } = require('mongoose');
 const Card = require('../models/card');
 const BadRequestError = require('../errors/BadRequestError');
 const NotFoundError = require('../errors/NotFoundError');
@@ -16,7 +15,7 @@ module.exports.createCard = (req, res, next) => {
   Card.create({ name, link, owner: req.user._id })
     .then((card) => res.status(201).send(card))
     .catch((err) => {
-      if (err instanceof Error.ValidationError) {
+      if (err.name === 'ValidationError') {
         return next(new BadRequestError('Переданы некорректные данные'));
       }
       return next(err);
@@ -25,10 +24,12 @@ module.exports.createCard = (req, res, next) => {
 
 module.exports.likeCard = (req, res, next) => {
   Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: true })
-    .orFail(new NotFoundError('Передан несуществующий id'))
+    .orFail(() => {
+      throw new NotFoundError('Передан несуществующий id');
+    })
     .then((card) => res.send(card))
     .catch((err) => {
-      if (err instanceof Error.CastError) {
+      if (err.name === 'CastError') {
         return next(new BadRequestError('Переданы некорректные данные'));
       }
       return next(err);
@@ -37,16 +38,19 @@ module.exports.likeCard = (req, res, next) => {
 
 module.exports.deleteCard = (req, res, next) => {
   Card.findById(req.params.cardId)
-    .orFail(new NotFoundError('Карточка с указанным id не найдена'))
+    .orFail(() => {
+      throw new NotFoundError('Карточка с указанным id не найдена');
+    })
     .then((card) => {
-      if (!card.owner.equals(req.user._id)) {
-        next(new ForbiddenError('Удалить карточку с указанным _id нельзя'));
+      if (card.owner.toString() === req.user._id) {
+        Card.deleteOne(card)
+          .then(() => res.send(card));
+      } else {
+        next(new ForbiddenError('Вы не можете удалить данную карточку'));
       }
-      Card.deleteOne(card)
-        .then(res.send(card));
     })
     .catch((err) => {
-      if (err instanceof Error.CastError) {
+      if (err.name === 'CastError') {
         return next(new BadRequestError('Передан несуществующий id'));
       }
       return next(err);
@@ -55,10 +59,12 @@ module.exports.deleteCard = (req, res, next) => {
 
 module.exports.dislikeCard = (req, res, next) => {
   Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } }, { new: true })
-    .orFail(new NotFoundError('Передан несуществующий id'))
+    .orFail(() => {
+      throw new NotFoundError('Передан несуществующий id');
+    })
     .then((card) => res.send(card))
     .catch((err) => {
-      if (err instanceof Error.CastError) {
+      if (err.name === 'CastError') {
         return next(new BadRequestError('Переданы некорректные данные'));
       }
       return next(err);
