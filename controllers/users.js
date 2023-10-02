@@ -12,21 +12,19 @@ module.exports.login = (req, res, next) => {
       const token = jwt.sign({ _id: user._id }, 'some-secret-key', { expiresIn: '7d' });
       res.send({ token });
     })
-    .catch((err) => next(err));
+    .catch(next);
 };
 
 module.exports.getUsers = (req, res, next) => {
   User.find({})
-    .then((users) => res.send(users))
+    .then((users) => res.status(200).send(users))
     .catch(next);
 };
 
 module.exports.getUser = (req, res, next) => {
   User.findById(req.user._id)
-    .orFail(() => {
-      throw new NotFoundError('Пользователь по указанному id не найден');
-    })
-    .then((user) => res.send(user))
+    .orFail(new NotFoundError('Пользователь по указанному id не найден'))
+    .then((user) => res.status(200).send(user))
     .catch((err) => {
       if (err.name === 'CastError') {
         return next(new BadRequestError('Переданы некорректные данные'));
@@ -37,9 +35,7 @@ module.exports.getUser = (req, res, next) => {
 
 module.exports.getUserById = (req, res, next) => {
   User.findById(req.params.userId)
-    .orFail(() => {
-      throw new NotFoundError('Пользователь по указанному id не найден');
-    })
+    .orFail(new NotFoundError('Пользователь по указанному id не найден'))
     .then((user) => res.send(user))
     .catch((err) => {
       if (err.name === 'CastError') {
@@ -69,7 +65,7 @@ module.exports.createUser = (req, res, next) => {
         return next(new BadRequestError('Переданы некорректные данные'));
       }
       if (err.code === 11000) {
-        return next(new ConflictError('Пользователь с таким email уже зарегистрирован.'));
+        return next(new ConflictError('Пользователь с таким email уже зарегистрирован'));
       }
       return next(err);
     });
@@ -77,11 +73,9 @@ module.exports.createUser = (req, res, next) => {
 
 module.exports.updateUser = (req, res, next) => {
   const { name, about } = req.body;
-  User.findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
-    .orFail(() => {
-      throw new NotFoundError('Пользователь по указанному id не найден');
-    })
-    .then((user) => res.send(user))
+  User.findByIdAndUpdate(req.user._id, { name, about }, { new: true })
+    .orFail(new NotFoundError('Пользователь по указанному id не найден'))
+    .then((user) => res.status(200).send(user))
     .catch((err) => {
       if (err.name === 'ValidationError') {
         return next(new BadRequestError('Переданы некорректные данные'));
@@ -92,14 +86,12 @@ module.exports.updateUser = (req, res, next) => {
 
 module.exports.updateAvatar = (req, res, next) => {
   const { avatar } = req.body;
-  User.findByIdAndUpdate(req.user._id, { avatar }, { new: true, runValidators: true })
-    .orFail(() => {
-      throw new NotFoundError('Пользователь по указанному id не найден');
-    })
-    .then((user) => res.send(user))
+  User.findByIdAndUpdate(req.user._id, { avatar }, { new: true })
+    .orFail(new NotFoundError('Пользователь по указанному id не найден'))
+    .then((user) => res.status(200).send(user))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        return next(new BadRequestError('Переданы некорректные данные.'));
+        return next(new BadRequestError('Переданы некорректные данные'));
       }
       return next(err);
     });

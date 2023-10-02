@@ -6,8 +6,8 @@ const ForbiddenError = require('../errors/ForbiddenError');
 module.exports.getCards = (req, res, next) => {
   Card.find({})
     .populate('likes')
-    .then((cards) => res.send(cards))
-    .catch((err) => next(err));
+    .then((cards) => res.status(200).send(cards))
+    .catch(next);
 };
 
 module.exports.createCard = (req, res, next) => {
@@ -24,10 +24,8 @@ module.exports.createCard = (req, res, next) => {
 
 module.exports.likeCard = (req, res, next) => {
   Card.findByIdAndUpdate(req.params.cardId, { $addToSet: { likes: req.user._id } }, { new: true })
-    .orFail(() => {
-      throw new NotFoundError('Передан несуществующий id');
-    })
-    .then((card) => res.send(card))
+    .orFail(new NotFoundError('Передан несуществующий id'))
+    .then((card) => res.status(201).send(card))
     .catch((err) => {
       if (err.name === 'CastError') {
         return next(new BadRequestError('Переданы некорректные данные'));
@@ -38,16 +36,13 @@ module.exports.likeCard = (req, res, next) => {
 
 module.exports.deleteCard = (req, res, next) => {
   Card.findById(req.params.cardId)
-    .orFail(() => {
-      throw new NotFoundError('Карточка с указанным id не найдена');
-    })
+    .orFail(new NotFoundError('Карточка с указанным id не найдена'))
     .then((card) => {
-      if (card.owner.toString() === req.user._id) {
-        Card.deleteOne(card)
-          .then(() => res.send(card));
-      } else {
-        next(new ForbiddenError('Вы не можете удалить данную карточку'));
+      if (!card.owner.equals(req.user._id)) {
+        next(new ForbiddenError('Удалить карточку с указанным _id нельзя'));
       }
+      Card.deleteOne(card)
+        .then(res.send(card));
     })
     .catch((err) => {
       if (err.name === 'CastError') {
@@ -59,10 +54,8 @@ module.exports.deleteCard = (req, res, next) => {
 
 module.exports.dislikeCard = (req, res, next) => {
   Card.findByIdAndUpdate(req.params.cardId, { $pull: { likes: req.user._id } }, { new: true })
-    .orFail(() => {
-      throw new NotFoundError('Передан несуществующий id');
-    })
-    .then((card) => res.send(card))
+    .orFail(new NotFoundError('Передан несуществующий id'))
+    .then((card) => res.status(200).send(card))
     .catch((err) => {
       if (err.name === 'CastError') {
         return next(new BadRequestError('Переданы некорректные данные'));
